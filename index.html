@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#123b32">
+  <meta name="description" content="Kam na túru? Odporúčania na turistiku na Slovensku podľa počasia, fotografií a horských podmienok.">
+  <title>Kam na túru? – Turistický radar Slovenska</title>
+  <style>
+    :root {
+      --green:#174b3e; --green2:#246b55; --lime:#d9f1c5; --ink:#17231f;
+      --muted:#64736c; --paper:#f4f7f3; --card:#fff; --line:#e1e9e2;
+      --orange:#a75b12; --red:#a93232; --shadow:0 10px 30px rgba(20,55,43,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    a{color:var(--green2)}
+    .hero{background:linear-gradient(125deg,#123b32,#246b55);color:#fff;padding:34px 20px 30px}
+    .hero-inner,.wrap{max-width:1180px;margin:auto}
+    .eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:.75rem;font-weight:800;color:#cde7d4}
+    h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.06;margin:8px 0 12px}
+    .hero p{max-width:720px;color:#e1efe7;margin:0}
+    .hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+    .hero-meta span{border:1px solid #ffffff40;border-radius:30px;padding:6px 11px;font-size:.85rem}
+    .wrap{padding:22px 18px 60px}
+    .toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+    .toolbar h2{margin:0;font-size:1.25rem}
+    button{border:0;border-radius:12px;background:var(--green);color:#fff;padding:11px 16px;font-weight:750;cursor:pointer}
+    button:disabled{opacity:.55;cursor:wait}
+    .status{padding:13px 15px;border-radius:13px;background:#e9f2e9;color:#315d47;margin:0 0 18px}
+    .status.error{background:#fff0ed;color:#8d3028}
+    .status small{display:block;color:inherit;opacity:.8;margin-top:3px}
+    .notice{background:#fff8e9;border:1px solid #f1dfb8;color:#6d4a17;border-radius:14px;padding:14px 16px;margin:18px 0}
+    .notice strong{display:block;margin-bottom:4px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:18px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:19px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+    .photo{height:220px;background:#dce7df;position:relative;overflow:hidden}
+    .photo img{width:100%;height:100%;object-fit:cover;display:block}
+    .photo-placeholder{height:100%;display:grid;place-items:center;color:#5b7164;background:linear-gradient(135deg,#dce9df,#b9d0c1);font-size:3rem}
+    .score{position:absolute;right:12px;top:12px;background:#fff;color:var(--green);font-weight:850;border-radius:30px;padding:6px 11px;box-shadow:0 2px 10px #0002}
+    .card-body{padding:17px;display:flex;flex-direction:column;gap:12px;flex:1}
+    .region{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--green2);font-weight:850}
+    .card h3{margin:2px 0 0;font-size:1.35rem;line-height:1.2}
+    .sub{color:var(--muted);font-size:.9rem}
+    .chips{display:flex;flex-wrap:wrap;gap:7px}
+    .chip{font-size:.78rem;padding:5px 9px;border-radius:30px;background:#edf4ee;color:#315b47;font-weight:700}
+    .chip.warn{background:#fff1dc;color:#87520e}
+    .chip.bad{background:#fdebea;color:#9b302c}
+    .weather{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+    .metric{background:#f5f8f5;border-radius:12px;padding:9px 10px}
+    .metric span{display:block;color:var(--muted);font-size:.75rem}
+    .metric strong{font-size:1.02rem}
+    .section-label{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;margin-bottom:-6px}
+    .clothes{font-size:.9rem;color:#33443b;background:#f7f8f5;padding:10px 12px;border-radius:12px}
+    .photo-credit{font-size:.76rem;color:var(--muted)}
+    .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:auto;padding-top:2px}
+    .actions a{font-size:.87rem;font-weight:750;text-decoration:none}
+    .actions a:hover{text-decoration:underline}
+    .fine{font-size:.82rem;color:var(--muted);margin-top:24px}
+    .empty{background:white;border:1px dashed #b9c9bc;border-radius:16px;padding:28px;text-align:center;color:var(--muted)}
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid #b7d4c2;border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:7px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:560px){.hero{padding:27px 18px}.wrap{padding:18px 12px 45px}.photo{height:195px}}
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">Turistický radar Slovenska</div>
+      <h1>Kam na túru?</h1>
+      <p>Nájdime pekný deň na výlet. Porovnávam počasie priamo v cieľovej lokalite a vyberám najviac 10 návrhov na najbližších 7 dní.</p>
+      <div class="hero-meta">
+        <span>☀️ Predpoveď na 7 dní</span>
+        <span>📍 Počasie v cieli túry</span>
+        <span>📷 Aktuálne verejné fotografie</span>
+        <span>🥾 Tipy na oblečenie</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="toolbar">
+      <h2>Najlepšie turistické príležitosti</h2>
+      <button id="refreshBtn" type="button">↻ Obnoviť predpoveď</button>
+    </div>
+    <div id="status" class="status" role="status" aria-live="polite"><span class="spinner"></span>Načítavam predpoveď počasia…</div>
+
+    <div class="notice">
+      <strong>Bezpečnosť v horách – dôležité upozornenie</strong>
+      Meteorologické skóre nie je potvrdením bezpečnosti túry. Lavínové nebezpečenstvo, uzávery chodníkov, vietor na hrebeni, sneh, ľad a aktuálne výstrahy si pred odchodom over na
+      <a href="https://www.laviny.sk/" target="_blank" rel="noopener">laviny.sk</a> a
+      <a href="https://www.hzs.sk/" target="_blank" rel="noopener">Horskej záchrannej službe</a>.
+      Pri vysokohorských trasách aplikácia zámerne nikdy nezobrazí stav „bezpečné“ bez samostatného overenia lavínovej situácie.
+    </div>
+
+    <section id="results" class="grid" aria-label="Odporúčané túry">
+      <div class="empty">Pripravujem odporúčania…</div>
+    </section>
+
+    <p class="fine">
+      Počasie: Open-Meteo. Sociálne fotografie: verejné príspevky Bluesky (ak sa nájdu vhodné obrázky).
+      Náhradné fotografie: Wikimedia Commons. Dátum pri sociálnej fotografii je dátum zverejnenia príspevku;
+      pri Commons dátum nahratia súboru – ani jeden údaj nemusí byť dátumom odfotenia.
+      Dĺžky trás sú orientačné a treba ich overiť podľa zvoleného nástupu a aktuálneho stavu chodníkov.
+    </p>
+  </main>
+
+<script>
+"use strict";
+
+/* -------------------------------------------------------
+   ZÁKLADNÉ NASTAVENIA
+   ------------------------------------------------------- */
+const CONFIG = {
+  forecastDays: 7,
+  maxResults: 10,
+  maxWindKmh: 25,
+  maxGustKmh: 40,
+  minVisibilityM: 10000,
+  maxPrecipProbability: 30,
+  // Vysokohorský terén: bez samostatného lavínového zdroja
+  // sa nikdy neoznačuje ako bezpečný.
+  requestTimeoutMs: 14000
+};
+
+/*
+  Súradnice sú približné reprezentatívne body cieľov.
+  Dĺžka a čas sú orientačné hodnoty okružnej trasy.
+  Pred výletom skontroluj trasu a prístupnosť chodníka.
+*/
+const HIKES = [
+  {name:"Šomoška",region:"Okolie Lučenca",lat:48.1774,lon:19.8584,elevation:480,distance:5.5,duration:"2–2,5 h",alpine:false,query:"Šomoška hrad"},
+  {name:"Fiľakovský hrad",region:"Okolie Lučenca",lat:48.2687,lon:19.8248,elevation:280,distance:2,duration:"1 h",alpine:false,query:"Fiľakovský hrad"},
+  {name:"Modrý Kameň",region:"Okolie Lučenca",lat:48.2544,lon:19.3322,elevation:315,distance:4,duration:"1,5 h",alpine:false,query:"Modrý Kameň hrad"},
+  {name:"Ragáč",region:"Okolie Lučenca",lat:48.2370,lon:19.5630,elevation:537,distance:6,duration:"2–2,5 h",alpine:false,query:"Ragáč Cerová vrchovina"},
+  {name:"Chopok",region:"Nízke Tatry",lat:48.9440,lon:19.5920,elevation:2024,distance:8,duration:"3,5–4,5 h",alpine:true,query:"Chopok Nízke Tatry"},
+  {name:"Ďumbier",region:"Nízke Tatry",lat:48.9370,lon:19.6400,elevation:2043,distance:14,duration:"5–6 h",alpine:true,query:"Ďumbier Nízke Tatry"},
+  {name:"Kráľova hoľa",region:"Nízke Tatry",lat:48.8790,lon:20.1380,elevation:1946,distance:12,duration:"4,5–5,5 h",alpine:true,query:"Kráľova hoľa"},
+  {name:"Ostredok",region:"Veľká Fatra",lat:48.9050,lon:19.0750,elevation:1596,distance:13,duration:"5–6 h",alpine:true,query:"Ostredok Veľká Fatra"},
+  {name:"Krížna",region:"Veľká Fatra",lat:48.8760,lon:19.1040,elevation:1574,distance:12,duration:"4,5–5,5 h",alpine:true,query:"Krížna Veľká Fatra"},
+  {name:"Borišov",region:"Veľká Fatra",lat:48.9290,lon:19.0570,elevation:1510,distance:14,duration:"5–6 h",alpine:true,query:"Borišov Veľká Fatra"},
+  {name:"Veľký Kriváň",region:"Malá Fatra",lat:49.1880,lon:19.0340,elevation:1709,distance:9,duration:"4–5 h",alpine:true,query:"Veľký Kriváň Malá Fatra"},
+  {name:"Chleb",region:"Malá Fatra",lat:49.1740,lon:19.0470,elevation:1646,distance:8,duration:"3,5–4,5 h",alpine:true,query:"Chleb Malá Fatra"},
+  {name:"Suchý",region:"Malá Fatra",lat:49.1740,lon:18.9230,elevation:1468,distance:10,duration:"4–5 h",alpine:true,query:"Suchý Malá Fatra"},
+  {name:"Hrebienok",region:"Vysoké Tatry",lat:49.1630,lon:20.2230,elevation:1285,distance:6,duration:"2–3 h",alpine:false,query:"Hrebienok Vysoké Tatry"},
+  {name:"Popradské pleso",region:"Vysoké Tatry",lat:49.1500,lon:20.0810,elevation:1494,distance:10,duration:"3–4 h",alpine:false,query:"Popradské pleso"},
+  {name:"Jamské pleso",region:"Vysoké Tatry",lat:49.1330,lon:20.0120,elevation:1447,distance:8,duration:"3–3,5 h",alpine:false,query:"Jamské pleso"},
+  {name:"Žiarska chata",region:"Západné Tatry",lat:49.1840,lon:19.7040,elevation:1325,distance:12,duration:"4–5 h",alpine:false,query:"Žiarska chata"},
+  {name:"Baranec",region:"Západné Tatry",lat:49.1670,lon:19.7350,elevation:2184,distance:14,duration:"6–7 h",alpine:true,query:"Baranec Západné Tatry"},
+  {name:"Roháčske plesá",region:"Západné Tatry",lat:49.2040,lon:19.7380,elevation:1718,distance:12,duration:"4,5–5,5 h",alpine:true,query:"Roháčske plesá"}
+];
+
+const $ = (selector) => document.querySelector(selector);
+const statusEl = $("#status");
+const resultsEl = $("#results");
+const refreshBtn = $("#refreshBtn");
+
+function setStatus(message, isError=false, detail="") {
+  statusEl.className = "status" + (isError ? " error" : "");
+  statusEl.textContent = message;
+  if (detail) {
+    const small = document.createElement("small");
+    small.textContent = detail;
+    statusEl.appendChild(small);
+  }
+}
+
+function timeoutFetch(url, timeout=CONFIG.requestTimeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  return fetch(url, {signal:controller.signal})
+    .finally(() => clearTimeout(timer));
+}
+
+async function fetchJson(url) {
+  const response = await timeoutFetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+function localDateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,"0");
+  const d = String(date.getDate()).padStart(2,"0");
+  return `${y}-${m}-${d}`;
+}
+
+function formatDate(dateString) {
+  const d = new Date(`${dateString}T12:00:00`);
+  return new Intl.DateTimeFormat("sk-SK",{weekday:"long",day:"numeric",month:"long"}).format(d);
+}
+
+function formatDateTime(iso) {
+  if (!iso) return "Dátum neuvedený";
+  const d = new Date(iso);
+  return new Intl.DateTimeFormat("sk-SK",{day:"numeric",month:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(d);
+}
+
+function average(values) {
+  const valid = values.filter(v => Number.isFinite(v));
+  return valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : null;
+}
+function maximum(values) {
+  const valid = values.filter(v => Number.isFinite(v));
+  return valid.length ? Math.max(...valid) : null;
+}
+function minimum(values) {
+  const valid = values.filter(v => Number.isFinite(v));
+  return valid.length ? Math.min(...valid) : null;
+}
+function fmt(value, suffix="", digits=0) {
+  return Number.isFinite(value) ? `${Number(value).toFixed(digits)}${suffix}` : "—";
+}
+
+/* -------------------------------------------------------
+   POČASIE – pre konkrétny vrchol, súradnice a nadmorskú výšku
+   ------------------------------------------------------- */
+async function getWeather(hike) {
+  const params = new URLSearchParams({
+    latitude:String(hike.lat),
+    longitude:String(hike.lon),
+    elevation:String(hike.elevation),
+    hourly:[
+      "temperature_2m",
+      "apparent_temperature",
+      "visibility",
+      "wind_speed_10m",
+      "wind_gusts_10m",
+      "precipitation_probability",
+      "precipitation",
+      "snowfall"
+    ].join(","),
+    forecast_days:String(CONFIG.forecastDays),
+    timezone:"Europe/Bratislava",
+    wind_speed_unit:"kmh"
+  });
+  const data = await fetchJson(`https://api.open-meteo.com/v1/forecast?${params}`);
+  if (!data.hourly || !Array.isArray(data.hourly.time)) {
+    throw new Error("Počasie neobsahuje hodinovú predpoveď.");
+  }
+  return data;
+}
+
+function scoreDay(hourly, dateKey) {
+  const now = new Date();
+  const indexes = [];
+  hourly.time.forEach((time,i) => {
+    if (time.startsWith(dateKey)) {
+      const hour = Number(time.slice(11,13));
+      // Pre turistiku hodnotíme dennú časť, približne 8:00–18:00.
+      if (hour >= 8 && hour <= 18 && new Date(time) >= now) indexes.push(i);
+    }
+  });
+  if (!indexes.length) return null;
+
+  const pick = key => indexes.map(i => hourly[key]?.[i]).filter(Number.isFinite);
+  const wind = maximum(pick("wind_speed_10m"));
+  const gust = maximum(pick("wind_gusts_10m"));
+  const precip = maximum(pick("precipitation_probability"));
+  const visibility = minimum(pick("visibility"));
+  const temp = average(pick("temperature_2m"));
+  const feels = average(pick("apparent_temperature"));
+  const snowfall = maximum(pick("snowfall"));
+  let score = 100;
+
+  if (wind !== null && wind > CONFIG.maxWindKmh) score -= Math.min(30,(wind-CONFIG.maxWindKmh)*1.5);
+  if (gust !== null && gust > CONFIG.maxGustKmh) score -= Math.min(25,(gust-CONFIG.maxGustKmh)*1.2);
+  if (precip !== null && precip > CONFIG.maxPrecipProbability) score -= Math.min(30,(precip-CONFIG.maxPrecipProbability)*0.7);
+  if (visibility !== null && visibility < CONFIG.minVisibilityM) score -= Math.min(25,(CONFIG.minVisibilityM-visibility)/500);
+  if (snowfall !== null && snowfall > 0.1) score -= Math.min(20,snowfall*5);
+  if (temp !== null && temp < -5) score -= 10;
+  if (temp !== null && temp > 28) score -= 8;
+
+  score = Math.max(0,Math.min(100,Math.round(score)));
+  const weatherPass =
+    (wind === null || wind <= CONFIG.maxWindKmh) &&
+    (gust === null || gust <= CONFIG.maxGustKmh) &&
+    (precip === null || precip <= CONFIG.maxPrecipProbability) &&
+    (visibility === null || visibility >= CONFIG.minVisibilityM) &&
+    (snowfall === null || snowfall <= 0.1);
+
+  return {date:dateKey,score,wind,gust,precip,visibility,temp,feels,snowfall,weatherPass};
+}
+
+/* -------------------------------------------------------
+   FOTOGRAFIE – najprv verejné príspevky Bluesky za 7 dní,
+   potom Wikimedia Commons. Nie je to prehľad všetkých sietí.
+   ------------------------------------------------------- */
+function cleanText(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+}
+function isRelevantPost(text,hike) {
+  const t = cleanText(text);
+  const name = cleanText(hike.name);
+  const words = name.split(/\s+/).filter(w=>w.length>2);
+  return t.includes(name) || words.some(w=>t.includes(w));
+}
+
+async function findBlueskyPhoto(hike) {
+  const since = new Date(Date.now()-7*24*60*60*1000).toISOString();
+  const terms = [`"${hike.name}"`, hike.query].filter(Boolean);
+  for (const term of terms) {
+    try {
+      const params = new URLSearchParams({q:term,since,sort:"latest",limit:"40"});
+      const data = await fetchJson(`https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?${params}`);
+      const posts = data.posts || [];
+      for (const post of posts) {
+        const record = post.record || {};
+        const text = record.text || "";
+        const createdAt = record.createdAt || post.indexedAt;
+        if (!createdAt || (Date.now()-new Date(createdAt).getTime()) > 7*24*60*60*1000) continue;
+        if (!isRelevantPost(text,hike)) continue;
+        const images = post.embed?.images || post.embed?.media?.images || [];
+        const image = images.find(item => item.fullsize || item.thumb);
+        if (!image) continue;
+        const handle = post.author?.handle || "";
+        const rkey = String(post.uri || "").split("/").pop();
+        const postUrl = handle && rkey ? `https://bsky.app/profile/${encodeURIComponent(handle)}/post/${encodeURIComponent(rkey)}` : "https://bsky.app";
+        return {
+          url:image.fullsize || image.thumb,
+          date:createdAt,
+          author:handle ? `@${handle}` : "Autor Bluesky",
+          source:"Bluesky",
+          link:postUrl,
+          recent:true
+        };
+      }
+    } catch (error) {
+      console.warn("Bluesky vyhľadávanie zlyhalo:",error);
+    }
+  }
+  return null;
+}
+
+async function findCommonsPhoto(hike) {
+  const queries = [
+    `${hike.query} Slovakia`,
+    `${hike.name} Slovakia`,
+    hike.name
+  ];
+  for (const query of queries) {
+    try {
+      const params = new URLSearchParams({
+        action:"query",
+        format:"json",
+        origin:"*",
+        generator:"search",
+        gsrsearch:`filetype:bitmap ${query}`,
+        gsrnamespace:"6",
+        gsrlimit:"12",
+        prop:"imageinfo",
+        iiprop:"url|timestamp|user|extmetadata",
+        iiurlwidth:"1000"
+      });
+      const data = await fetchJson(`https://commons.wikimedia.org/w/api.php?${params}`);
+      const pages = Object.values(data.query?.pages || {});
+      const candidates = pages
+        .filter(page => page.imageinfo?.[0]?.thumburl || page.imageinfo?.[0]?.url)
+        .map(page => ({page,info:page.imageinfo[0]}))
+        .sort((a,b)=>new Date(b.info.timestamp||0)-new Date(a.info.timestamp||0));
+      if (!candidates.length) continue;
+      const {page,info} = candidates[0];
+      const artist = info.extmetadata?.Artist?.value || info.user || "Neuvedený autor";
+      return {
+        url:info.thumburl || info.url,
+        date:info.timestamp || null,
+        author:artist.replace(/<[^>]*>/g,"").slice(0,140),
+        source:"Wikimedia Commons",
+        link:info.descriptionurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g,"_"))}`,
+        recent:false
+      };
+    } catch (error) {
+      console.warn("Wikimedia Commons vyhľadávanie zlyhalo:",error);
+    }
+  }
+  return null;
+}
+
+async function getPhoto(hike) {
+  const social = await findBlueskyPhoto(hike);
+  if (social) return social;
+  return await findCommonsPhoto(hike);
+}
+
+/* -------------------------------------------------------
+   ODPORÚČANÉ OBLEČENIE
+   ------------------------------------------------------- */
+function clothingTips(day,hike) {
+  const t = day.feels ?? day.temp;
+  const tips = [];
+  if (t === null) tips.push("Vrstvené oblečenie");
+  else if (t < -5) tips.push("Zateplená bunda","teplé rukavice","čiapka");
+  else if (t < 3) tips.push("Zimná bunda","termovrstva","rukavice");
+  else if (t < 10) tips.push("Funkčná spodná vrstva","fleece","vetruodolná bunda");
+  else if (t < 18) tips.push("Tričko","ľahká mikina","ľahká bunda");
+  else tips.push("Priedušné tričko","ľahká vrstva do batohu");
+  if ((day.wind ?? 0) > 18 || (day.gust ?? 0) > 30) tips.push("vetruodolná vrstva");
+  if ((day.precip ?? 0) > 15) tips.push("nepremokavá bunda");
+  if ((day.snowfall ?? 0) > 0.1 || hike.elevation > 1500) tips.push("pevná turistická obuv");
+  if (hike.alpine) tips.push("čelovka a zimná výbava podľa podmienok");
+  return [...new Set(tips)].join(", ")+".";
+}
+
+function weatherLabel(day,hike) {
+  if (hike.alpine) return {text:"Vysokohorský terén – over lavíny",className:"warn"};
+  if (day.weatherPass && day.score >= 75) return {text:"Dobré meteorologické podmienky",className:""};
+  if (day.score >= 55) return {text:"Podmienky s výhradami",className:"warn"};
+  return {text:"Skôr nevhodné počasie",className:"bad"};
+}
+
+/* -------------------------------------------------------
+   VYKRESLENIE KARTY – bezpečné vytváranie DOM prvkov
+   ------------------------------------------------------- */
+function makeElement(tag,className,text) {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (text !== undefined && text !== null) el.textContent = text;
+  return el;
+}
+
+function renderCard(item) {
+  const {hike,day,photo} = item;
+  const card = makeElement("article","card");
+  const photoBox = makeElement("div","photo");
+  if (photo?.url) {
+    const img = document.createElement("img");
+    img.src = photo.url;
+    img.alt = `Fotografia lokality ${hike.name}`;
+    img.loading = "lazy";
+    img.referrerPolicy = "no-referrer";
+    img.onerror = () => {
+      photoBox.replaceChildren(makeElement("div","photo-placeholder","🏔️"));
+    };
+    photoBox.appendChild(img);
+  } else {
+    photoBox.appendChild(makeElement("div","photo-placeholder","🏔️"));
+  }
+  photoBox.appendChild(makeElement("span","score",`${day.score}/100`));
+  card.appendChild(photoBox);
+
+  const body = makeElement("div","card-body");
+  body.appendChild(makeElement("div","region",hike.region));
+  body.appendChild(makeElement("h3","",hike.name));
+  body.appendChild(makeElement("div","sub",`${formatDate(day.date)} · približne ${hike.elevation} m n. m.`));
+
+  const chips = makeElement("div","chips");
+  const label = weatherLabel(day,hike);
+  chips.appendChild(makeElement("span",`chip ${label.className}`,label.text));
+  chips.appendChild(makeElement("span","chip",`${hike.distance} km · ${hike.duration}`));
+  if (photo?.recent) chips.appendChild(makeElement("span","chip","Fotka z posledných 7 dní"));
+  body.appendChild(chips);
+
+  body.appendChild(makeElement("div","section-label","Počasie v cieli túry"));
+  const weather = makeElement("div","weather");
+  const metrics = [
+    ["Teplota",fmt(day.temp," °C",1)],
+    ["Pocitová teplota",fmt(day.feels," °C",1)],
+    ["Max. vietor",fmt(day.wind," km/h")],
+    ["Nárazy vetra",fmt(day.gust," km/h")],
+    ["Zrážky – pravdepodobnosť",fmt(day.precip," %")],
+    ["Dohľadnosť – minimum",day.visibility===null?"—":`${(day.visibility/1000).toFixed(1)} km`]
+  ];
+  for (const [labelText,value] of metrics) {
+    const metric = makeElement("div","metric");
+    metric.appendChild(makeElement("span","",labelText));
+    metric.appendChild(makeElement("strong","",value));
+    weather.appendChild(metric);
+  }
+  body.appendChild(weather);
+
+  body.appendChild(makeElement("div","section-label","Čo si obliecť"));
+  body.appendChild(makeElement("div","clothes",clothingTips(day,hike)));
+
+  const credit = photo
+    ? `${photo.source} · ${photo.author} · ${photo.date ? formatDateTime(photo.date) : "dátum neuvedený"}`
+    : "Fotografia sa nepodarila nájsť.";
+  body.appendChild(makeElement("div","photo-credit",credit));
+
+  const actions = makeElement("div","actions");
+  if (photo?.link) {
+    const sourceLink = document.createElement("a");
+    sourceLink.href = photo.link;
+    sourceLink.target = "_blank";
+    sourceLink.rel = "noopener";
+    sourceLink.textContent = "Otvoriť zdroj fotografie ↗";
+    actions.appendChild(sourceLink);
+  }
+  const mapLink = document.createElement("a");
+  mapLink.href = `https://www.google.com/maps/search/?api=1&query=${hike.lat},${hike.lon}`;
+  mapLink.target = "_blank";
+  mapLink.rel = "noopener";
+  mapLink.textContent = "Zobraziť cieľ na mape ↗";
+  actions.appendChild(mapLink);
+  body.appendChild(actions);
+  card.appendChild(body);
+  return card;
+}
+
+/* -------------------------------------------------------
+   HLAVNÝ PROCES
+   ------------------------------------------------------- */
+async function loadApp() {
+  refreshBtn.disabled = true;
+  refreshBtn.textContent = "Načítavam…";
+  resultsEl.replaceChildren(makeElement("div","empty","Načítavam počasie pre jednotlivé vrcholy…"));
+  setStatus("Načítavam predpoveď počasia pre jednotlivé ciele…");
+
+  try {
+    const weatherResults = await Promise.allSettled(
+      HIKES.map(async hike => ({hike,weather:await getWeather(hike)}))
+    );
+
+    const candidates = [];
+    let weatherFailures = 0;
+
+    for (const result of weatherResults) {
+      if (result.status !== "fulfilled") {
+        weatherFailures++;
+        continue;
+      }
+      const {hike,weather} = result.value;
+      const hourly = weather.hourly;
+      const dates = [...new Set(hourly.time.map(t=>t.slice(0,10)))].slice(0,CONFIG.forecastDays);
+      for (const date of dates) {
+        const day = scoreDay(hourly,date);
+        if (!day) continue;
+        // Nezobrazujeme úplne nevhodné dni; pri vysokohorských cieľoch
+        // ponecháme aj dobré meteorologické okná, ale s jasným varovaním.
+        if (day.score < 45) continue;
+        candidates.push({hike,day});
+      }
+    }
+
+    if (!candidates.length) {
+      resultsEl.replaceChildren(makeElement("div","empty","Nepodarilo sa získať použiteľnú predpoveď. Skús obnoviť stránku neskôr."));
+      setStatus("Momentálne sa nepodarilo načítať použiteľné údaje.",true,
+        "Skontroluj internetové pripojenie alebo dostupnosť služby Open-Meteo.");
+      return;
+    }
+
+    // Najlepší deň pre každý vrchol; potom globálne zoradenie.
+    const bestByHike = new Map();
+    for (const item of candidates) {
+      const key = item.hike.name;
+      const old = bestByHike.get(key);
+      if (!old || item.day.score > old.day.score) bestByHike.set(key,item);
+    }
+
+    const ranked = [...bestByHike.values()].sort((a,b) => {
+      // Pri rovnakom skóre preferuj nižšie položené, nealpské ciele.
+      const alpinePenaltyA = a.hike.alpine ? 8 : 0;
+      const alpinePenaltyB = b.hike.alpine ? 8 : 0;
+      return (b.day.score-alpinePenaltyB)-(a.day.score-alpinePenaltyA);
+    });
+
+    // Najprv sa pokúsime pokryť viac regiónov, potom doplníme rebríček.
+    const selected = [];
+    const regions = new Set();
+    for (const item of ranked) {
+      if (!regions.has(item.hike.region) && selected.length < CONFIG.maxResults) {
+        selected.push(item);
+        regions.add(item.hike.region);
+      }
+    }
+    for (const item of ranked) {
+      if (selected.length >= CONFIG.maxResults) break;
+      if (!selected.some(s=>s.hike.name===item.hike.name)) selected.push(item);
+    }
+
+    setStatus(`Našiel som ${selected.length} odporúčaní. Teraz hľadám fotografie…`,
+      false,
+      weatherFailures ? `${weatherFailures} lokalít sa nepodarilo načítať z meteorologického API.` : "Počasie je vyhodnotené pre súradnice cieľov.");
+
+    // Fotografie sa hľadajú až pre finálny výber. Zlyhanie fotky
+    // nikdy neblokuje kartu ani meteorologické údaje.
+    const photoResults = await Promise.allSettled(selected.map(item=>getPhoto(item.hike)));
+    const finalItems = selected.map((item,index)=>({
+      ...item,
+      photo:photoResults[index].status==="fulfilled" ? photoResults[index].value : null
+    }));
+
+    resultsEl.replaceChildren(...finalItems.map(renderCard));
+    const recentPhotos = finalItems.filter(x=>x.photo?.recent).length;
+    setStatus(`Hotovo – zobrazených ${finalItems.length} najlepších návrhov.`,
+      false,
+      `${recentPhotos} fotografií pochádza z verejných príspevkov z posledných 7 dní. Ostatné sú náhradné fotografie alebo bez fotografie. Skóre hodnotí počasie, nie celkovú bezpečnosť túry.`);
+  } catch (error) {
+    console.error(error);
+    resultsEl.replaceChildren(makeElement("div","empty","Pri načítaní aplikácie nastala chyba. Obnov stránku alebo to skús o chvíľu."));
+    setStatus("Aplikáciu sa nepodarilo načítať.",true,error?.message || "Neznáma chyba.");
+  } finally {
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "↻ Obnoviť predpoveď";
+  }
+}
+
+refreshBtn.addEventListener("click",loadApp);
+loadApp();
+</script>
+</body>
+</html>
